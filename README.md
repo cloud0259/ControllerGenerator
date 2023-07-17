@@ -5,7 +5,6 @@
 
 # ControllerGenerator
 
-Automatic Controller Generator with Source Generator
 This project is an automatic controller generator for .NET projects. It uses Source Generator to automatically create controllers from specified services in a project containing the services.
 
 ## Installation
