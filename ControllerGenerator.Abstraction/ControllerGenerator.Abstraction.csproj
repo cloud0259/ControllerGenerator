@@ -2,18 +2,13 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-
 	  <LangVersion>11.0</LangVersion>
-
 	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-
 	  <Title>ControllerGenerator</Title>
-
 	  <PackageTags>Source generator;.net;controller;api</PackageTags>
-
 	  <Company>$(Author)</Company>
-
 	  <Authors>Pilloy Stéphane</Authors>
+	  <Version>1.1.0</Version>
   </PropertyGroup>
 
 </Project>
