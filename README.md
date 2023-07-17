@@ -13,7 +13,12 @@ To use this generator, you need to install the ControllerGenerator.Abstractions 
 ```
 Install-Package ControllerGenerator.Abstractions
 ```
-##Usage
+In your web project, it is necessary to install the ControllerGenerator library
+```
+Install-Package ControllerGenerator
+```
+
+## Usage
 To have your services recognized by the generator, each service or its interface must inherit the IAutoGenerateController interface.
 
 ```csharp
