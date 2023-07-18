@@ -37,7 +37,7 @@ jobs:
       id: version-check
       run: |
         LATEST_TAG=$(git tag --sort=-version:refname | head -n 1)
-        PACKAGE_VERSION=$(dotnet list ./ControllerGenerator/bin/Release/*.nupkg package --show-version)
+        PACKAGE_VERSION=$(dotnet pack ./ControllerGenerator/ControllerGenerator.csproj --configuration Release --output ./ControllerGenerator/bin/Release --no-build --version-suffix "" | grep -oP '(?<=<version>)[^<]+')
         if [[ "$LATEST_TAG" != "" && "$PACKAGE_VERSION" == "$LATEST_TAG" ]]; then
           echo "Package version is the same as the latest tag. No need to publish."
           exit 0
