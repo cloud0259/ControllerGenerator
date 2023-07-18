@@ -1,7 +1,7 @@
 # This workflow will build a .NET project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
 
-name: .NET
+name: .build
 
 on:
   push:
@@ -22,5 +22,29 @@ jobs:
         dotnet-version: 7.0.x
     - name: Restore dependencies
       run: dotnet restore
-    - name: Build
-      run: dotnet build
+
+    # Build ControllerGenerator project and pack the generated package
+    - name: Build and pack ControllerGenerator
+      run: |
+        dotnet build ./ControllerGenerator/ControllerGenerator.csproj --configuration Release
+        dotnet pack ./ControllerGenerator/ControllerGenerator.csproj --configuration Release --output ./ControllerGenerator/bin/Release
+
+    # Build ControllerGenerator.Abstraction project and pack the generated package
+    - name: Build and pack ControllerGenerator.Abstraction
+      run: |
+        dotnet build ./ControllerGenerator.Abstraction/ControllerGenerator.Abstraction.csproj --configuration Release
+        dotnet pack ./ControllerGenerator.Abstraction/ControllerGenerator.Abstraction.csproj --configuration Release --output ./ControllerGenerator.Abstraction/bin/Release
+
+    # Publish NuGet packages
+    - name: Publish ControllerGenerator package
+      if: startsWith(github.ref, 'refs/tags/')
+      env:
+        NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
+      run: dotnet nuget push ./ControllerGenerator/bin/Release/*.nupkg --api-key $NUGET_APIKEY --source https://api.nuget.org/v3/index.json
+
+    - name: Publish ControllerGenerator.Abstraction package
+      if: startsWith(github.ref, 'refs/tags/')
+      env:
+        NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
+      run: dotnet nuget push ./ControllerGenerator.Abstraction/bin/Release/*.nupkg --api-key $NUGET_APIKEY --source https://api.nuget.org/v3/index.json
+
