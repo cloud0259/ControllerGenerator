@@ -1,9 +1,9 @@
-[![NuGet](https://img.shields.io/nuget/v/ControllerGenerator?label=ControllerGenerator)](https://www.nuget.org/packages/ControllerGenerator)
-[![NuGet](https://img.shields.io/nuget/v/ControllerGenerator.Abstraction?label=ControllerGenerator.Abstraction)](https://www.nuget.org/packages/ControllerGenerator)
-[![Mon Badge](https://github.com/cloud0259/ControllerGenerator/workflows/.build/badge.svg)](https://github.com/cloud0259/ControllerGenerator/actions)
-
-
 # ControllerGenerator
+| ControllerGenerator | ControllerGenerator.Abstraction | Action |
+|------------------|------------------|------------------|
+| [![NuGet](https://img.shields.io/nuget/v/ControllerGenerator?label=ControllerGenerator)](https://www.nuget.org/packages/ControllerGenerator)       | [![NuGet](https://img.shields.io/nuget/v/ControllerGenerator.Abstraction?label=ControllerGenerator.Abstraction)](https://www.nuget.org/packages/ControllerGenerator)         | [![Mon Badge](https://github.com/cloud0259/ControllerGenerator/workflows/.build/badge.svg)](https://github.com/cloud0259/ControllerGenerator/actions)         |
+| ![Nuget](https://img.shields.io/nuget/dt/ControllerGenerator?label=ControllerGenerator)         | ![Nuget](https://img.shields.io/nuget/dt/ControllerGenerator.Abstraction?label=ControllerGenerator.Abstraction)         |          |
+
 
 This project is an automatic controller generator for .NET projects. It uses Source Generator to automatically create controllers from specified services in a project containing the services.
 
