@@ -1,6 +1,6 @@
 [![NuGet](https://img.shields.io/nuget/v/ControllerGenerator?label=ControllerGenerator)](https://www.nuget.org/packages/ControllerGenerator)
 [![NuGet](https://img.shields.io/nuget/v/ControllerGenerator.Abstraction?label=ControllerGenerator.Abstraction)](https://www.nuget.org/packages/ControllerGenerator)
-[![Mon Badge](https://github.com/cloud0259/ControllerGenerator/workflows/.NET/badge.svg)](https://github.com/cloud0259/ControllerGenerator/actions)
+[![Mon Badge](https://github.com/cloud0259/ControllerGenerator/workflows/.build/badge.svg)](https://github.com/cloud0259/ControllerGenerator/actions)
 
 
 # ControllerGenerator
