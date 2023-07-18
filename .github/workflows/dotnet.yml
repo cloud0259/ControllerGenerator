@@ -34,9 +34,10 @@ jobs:
 
     # Check if the package version is greater than the latest tag or is different from the previous build's version
     - name: Check Package Version
+      id: version-check
       run: |
         LATEST_TAG=$(git tag --sort=-version:refname | head -n 1)
-        PACKAGE_VERSION=$(dotnet pack ./ControllerGenerator/ControllerGenerator.csproj --configuration Release --output ./ControllerGenerator/bin/Release --no-build --version-suffix "" | grep -oP '(?<=version )[^ ]+')
+        PACKAGE_VERSION=$(dotnet list ./ControllerGenerator/bin/Release/*.nupkg package --show-version)
         if [[ "$LATEST_TAG" != "" && "$PACKAGE_VERSION" == "$LATEST_TAG" ]]; then
           echo "Package version is the same as the latest tag. No need to publish."
           exit 0
@@ -45,6 +46,7 @@ jobs:
           echo "Package version is older than the latest tag. No need to publish."
           exit 0
         fi
+        echo "::set-output name=package_version::$PACKAGE_VERSION"
 
     # Publish NuGet packages
     - name: Publish ControllerGenerator package
