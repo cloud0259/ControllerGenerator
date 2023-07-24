@@ -34,6 +34,8 @@ Requests in the generated controllers are determined based on the method prefixe
 - If the service method starts with "Get", "Post", "Patch", "Update", "Create", or "Delete", the generated request will correspond to the respective HTTP methods.
 - If there is no prefix, the generated request will be of type HTTP POST.
 
+Attributes can be used in services. These will be recognized by the Source Generator
+
 ## Requirements
 The Source Generator library must be installed in the target project. The target project should be a .NET 7.0 web application or a higher version.
 
@@ -45,10 +47,25 @@ Here's an example of using this generator:
 
 public interface IMyService : IAutoGenerateController
 {
-    void GetUserAsync(int id);
-    void PostUser(UserData data);
-    void UpdateUser(int id, UserData data);
+    Task<User> GetUserAsync(int id);
+    Task<User> PostUser(UserData data);
+    Task UpdateUser(int id, UserData data);
     // Other service methods
+}
+
+//Service implementation
+public class MyService : IMyService
+{
+    //Property, Ctor ....
+    
+    [HttpGet] //it's not mandatory
+    [Authorize("Admin")]
+    public async Task<User> GetUserAsync(int id)
+    {
+        return await userList.FirstOrDefaultAsync(x => x.Id == id);
+    }
+
+    //Other method...
 }
 
 // In the .NET 7.0 or higher web project
