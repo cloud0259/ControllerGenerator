@@ -24,18 +24,18 @@ namespace ControllerGenerator.SourceGenerators
         {
             //For debug
 #if DEBUG
-            if(!Debugger.IsAttached)
+            if (!Debugger.IsAttached)
             {
                 Debugger.Launch();
             }
 #endif
-            
+
             var compilationIncrementalValue = context.CompilationProvider;
             context.RegisterSourceOutput(
                 compilationIncrementalValue,
                  (context, compilation) =>
                  {
-                     
+
                      var serviceTypes = GetServiceTypes(compilation);
                      // Generate controller source code for each type of service
                      foreach (var serviceType in serviceTypes)
@@ -60,8 +60,8 @@ namespace ControllerGenerator.SourceGenerators
 
             foreach (var member in members)
             {
-                if(member.Kind !=  SymbolKind.Namespace) continue;
-                
+                if (member.Kind != SymbolKind.Namespace) continue;
+
                 if (member is ISymbol symbolMember)
                 {
                     uniqueSymbols.Add(symbolMember);
@@ -83,7 +83,7 @@ namespace ControllerGenerator.SourceGenerators
 
             string assemblyName = compilation.AssemblyName;
             int lastDotIndex = assemblyName.IndexOf('.');
-            string projectName = assemblyName.Substring(0, lastDotIndex); 
+            string projectName = assemblyName.Contains(".") ? assemblyName.Substring(0, lastDotIndex) : assemblyName;
 
             IEnumerable<IAssemblySymbol> assemblySymbols = compilation.SourceModule.ReferencedAssemblySymbols.Where(q => q.Name.Contains(projectName));
 
@@ -109,7 +109,7 @@ namespace ControllerGenerator.SourceGenerators
                         }
                     }
                 }
-            }           
+            }
 
             servicesTypes.AddRange(compilation.SyntaxTrees
                .SelectMany(syntaxTree => syntaxTree.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>())
@@ -177,23 +177,88 @@ namespace ControllerGenerator.SourceGenerators
             {
                 var methodName = methodSymbol.Name;
 
-                
-                    var returnType = methodSymbol.ReturnType.ToString().ToLower();
 
-                    var parameters = methodSymbol.Parameters;
-                    var parametersSignature = string.Join(", ", parameters.Select(p =>
-                        $"{p.Type.ToString()} {p.Name}"
-                    ));
+                var returnType = methodSymbol.ReturnType.ToString().ToLower();
 
-                    var methodDeclaration = SyntaxFactory.MethodDeclaration(
+                var parameters = methodSymbol.Parameters;
+                var parametersSignature = string.Join(", ", parameters.Select(p =>
+                    $"{p.Type.ToString()} {p.Name}"
+                ));
+
+                var attributeList = new List<AttributeSyntax>();
+
+                // Récupère les attributs du symbole de méthode
+                foreach (var attributeData in methodSymbol.GetAttributes())
+                {
+                    // Récupère le nom complet de l'attribut, y compris le nom de l'espace de noms
+                    var attributeNamespace = attributeData.AttributeClass.ContainingNamespace.ToDisplayString();
+                    var attributeName = attributeData.AttributeClass.Name;
+                    if (attributeName.EndsWith("Attribute", StringComparison.OrdinalIgnoreCase))
+                    {
+                        attributeName = attributeName.Substring(0, attributeName.Length - "Attribute".Length);
+                    }
+
+                    var arguments = new List<AttributeArgumentSyntax>();
+
+                    foreach (var argument in attributeData.ConstructorArguments)
+                    {
+                        ExpressionSyntax argumentExpression = null;
+                        switch (argument.Value)
+                        {
+                            case int intValue:
+                                argumentExpression = SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(intValue));
+                                break;
+                            case string stringValue:
+                                argumentExpression = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(stringValue));
+                                break;
+                            case bool boolValue:
+                                argumentExpression = SyntaxFactory.LiteralExpression(boolValue ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression);
+                                break;
+                            case double doubleValue:
+                                argumentExpression = SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(doubleValue));
+                                break;
+                            case float floatValue:
+                                argumentExpression = SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(floatValue));
+                                break;
+                            case decimal decimalValue:
+                                argumentExpression = SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(decimalValue));
+                                break;
+                            case DateTime dateTimeValue:
+                                argumentExpression = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(dateTimeValue.ToString("o")));
+                                break;
+                            case TimeSpan timeSpanValue:
+                                argumentExpression = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(timeSpanValue.ToString()));
+                                break;
+                            default:
+                                //argumentExpression = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
+                                break;
+                        }
+                        if (argumentExpression != null)
+                        {
+                            arguments.Add(SyntaxFactory.AttributeArgument(argumentExpression));
+                        }
+                    }
+
+                    var attributeSyntax = SyntaxFactory.Attribute(SyntaxFactory.ParseName($"{attributeNamespace}.{attributeName}"));
+                    if (arguments.Count > 0)
+                    {
+                        attributeSyntax = attributeSyntax.WithArgumentList(SyntaxFactory.AttributeArgumentList(SyntaxFactory.SeparatedList(arguments)));
+                    }
+
+                    // Ajoute l'attribut à la liste
+                    attributeList.Add(attributeSyntax);
+                }
+
+                var methodDeclaration = SyntaxFactory.MethodDeclaration(
                         SyntaxFactory.ParseTypeName(returnType),
                         methodName
                     )
                     .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)))
-                    .WithParameterList(SyntaxFactory.ParseParameterList($"({parametersSignature})"));
+                    .WithParameterList(SyntaxFactory.ParseParameterList($"({parametersSignature})"))
+                    .WithAttributeLists(SyntaxFactory.List(new[] { SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(attributeList)) }));
 
-                    methodDeclarations.Add(methodDeclaration);
-                
+                methodDeclarations.Add(methodDeclaration);
+
             }
 
             return methodDeclarations;
@@ -211,7 +276,7 @@ namespace ControllerGenerator.SourceGenerators
             var serviceName = serviceType.Name.IndexOf("appservice", StringComparison.OrdinalIgnoreCase) >= 0 ? Regex.Replace(serviceType.Name, "appservice", "", RegexOptions.IgnoreCase) : serviceType.Name;
             var serviceContract = serviceType.Interfaces.Count() > 0 && serviceType.Interfaces.Where(i => i.Name.Contains(serviceType.Name)).Count() > 0 ? serviceType.Interfaces.Where(i => i.Name.Contains(serviceType.Name)).FirstOrDefault()?.Name : serviceType.Name;
 
-            var serviceNamespace = serviceType.Interfaces.Where(i => i.Name.Contains(serviceType.Name)).FirstOrDefault()?.OriginalDefinition.ContainingNamespace.ToString() ?? serviceType.ContainingNamespace.ToString() ;
+            var serviceNamespace = serviceType.Interfaces.Where(i => i.Name.Contains(serviceType.Name)).FirstOrDefault()?.OriginalDefinition.ContainingNamespace.ToString() ?? serviceType.ContainingNamespace.ToString();
             var serviceRootNamespace = serviceNamespace.Substring(0, serviceNamespace.LastIndexOf('.'));
 
             stringBuilder.AppendLine("using Microsoft.AspNetCore.Mvc;");
@@ -223,19 +288,19 @@ namespace ControllerGenerator.SourceGenerators
             stringBuilder.AppendLine("{");
             stringBuilder.AppendLine();
 
-            stringBuilder.AppendLine("[Route(\"api/[controller]\")]");
-            stringBuilder.AppendLine("[ApiController]");
-            stringBuilder.AppendLine($"public class {serviceName}Controller : ControllerBase");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine();
-
-            stringBuilder.AppendLine($"    private readonly {serviceContract} _service;");
-            stringBuilder.AppendLine();
-
-            stringBuilder.AppendLine($"    public {serviceName}Controller({serviceContract} service)");
+            stringBuilder.AppendLine("    [Route(\"api/[controller]\")]");
+            stringBuilder.AppendLine("    [ApiController]");
+            stringBuilder.AppendLine($"    public class {serviceName}Controller : ControllerBase");
             stringBuilder.AppendLine("    {");
+            stringBuilder.AppendLine();
+
+            stringBuilder.AppendLine($"        private readonly {serviceContract} _service;");
+            stringBuilder.AppendLine();
+
+            stringBuilder.AppendLine($"        public {serviceName}Controller({serviceContract} service)");
+            stringBuilder.AppendLine("        {");
             stringBuilder.AppendLine("        _service = service;");
-            stringBuilder.AppendLine("    }");
+            stringBuilder.AppendLine("        }");
             stringBuilder.AppendLine();
 
 
@@ -250,40 +315,55 @@ namespace ControllerGenerator.SourceGenerators
                     var parametersSignature = string.Join(", ", parameters.Select(p =>
                         $"{p.Type.ToString()} {p.Identifier.ValueText}"
                     ));
+                    var isHttpAttribute = false;
+                    foreach (var attributeList in method.AttributeLists)
+                    {
+                        foreach (var attribute in attributeList.Attributes)
+                        {
+                            string attributeName = attribute.Name.ToString();
+                            string attributeArguments = string.Join(", ", attribute.ArgumentList?.Arguments.Select(a => a.ToString()) ?? Enumerable.Empty<string>());
 
-                    if (methodName.ToLower().Contains("get"))
-                    {
-                        stringBuilder.AppendLine($"    [HttpGet(\"{methodName}\")]");
+                            if (!attributeName.StartsWith("System"))
+                            {
+                                stringBuilder.AppendLine($"        [{attributeName}({attributeArguments})]");
+                                if (attributeName.Contains("Microsoft.AspNetCore.Mvc.Http"))
+                                {
+                                    isHttpAttribute = true;
+                                }
+                            }
+                        }
                     }
-                    else if (methodName.ToLower().Contains("update"))
+
+                    if (!isHttpAttribute)
                     {
-                        stringBuilder.AppendLine($"    [HttpPut(\"{methodName}\")]");
-                    }
-                    else if (methodName.ToLower().Contains("delete"))
-                    {
-                        stringBuilder.AppendLine($"    [HttpDelete(\"{methodName}\")]");
-                    }
-                    else if (methodName.ToLower().Contains("patch"))
-                    {
-                        stringBuilder.AppendLine($"    [HttpPatch(\"{methodName}\")]");
-                    }
-                    else
-                    {
-                        stringBuilder.AppendLine($"    [HttpPost(\"{methodName}\")]");
+                        switch (methodName.ToLower())
+                        {
+                            case var name when name.Contains("get"):
+                                stringBuilder.AppendLine($"        [HttpGet(\"{methodName}\")]");
+                                break;
+                            case var name when name.Contains("update"):
+                                stringBuilder.AppendLine($"        [HttpPut(\"{methodName}\")]");
+                                break;
+                            case var name when name.Contains("delete"):
+                                stringBuilder.AppendLine($"        [HttpDelete(\"{methodName}\")]");
+                                break;
+                            case var name when name.Contains("patch"):
+                                stringBuilder.AppendLine($"        [HttpPatch(\"{methodName}\")]");
+                                break;
+                            default:
+                                stringBuilder.AppendLine($"        [HttpPost(\"{methodName}\")]");
+                                break;
+                        }
                     }
 
                     if (returnType != "void")
                     {
-                        stringBuilder.AppendLine($"    public async Task<IActionResult> {methodName}({parametersSignature})");
-
+                        stringBuilder.AppendLine($"        public async Task<IActionResult> {methodName}({parametersSignature})");
                     }
                     else
                     {
-                        stringBuilder.AppendLine($"    public IActionResult {methodName}({parametersSignature})");
-
+                        stringBuilder.AppendLine($"        public IActionResult {methodName}({parametersSignature})");
                     }
-                    stringBuilder.AppendLine("    {");
-                    stringBuilder.AppendLine($"        try");
                     stringBuilder.AppendLine("        {");
 
                     var arguments = string.Join(", ", parameters.Select(p => p.Identifier.ValueText));
@@ -301,17 +381,11 @@ namespace ControllerGenerator.SourceGenerators
                     }
 
                     stringBuilder.AppendLine("        }");
-                    stringBuilder.AppendLine("        catch (Exception ex)");
-                    stringBuilder.AppendLine("        {");
-                    stringBuilder.AppendLine("            // Gérer les erreurs appropriées");
-                    stringBuilder.AppendLine("            return StatusCode(500, ex.Message);");
-                    stringBuilder.AppendLine("        }");
-                    stringBuilder.AppendLine("    }");
                     stringBuilder.AppendLine();
                 }
             }
 
-            stringBuilder.AppendLine("}");
+            stringBuilder.AppendLine("    }");
             stringBuilder.AppendLine("}");
 
             return stringBuilder.ToString();
