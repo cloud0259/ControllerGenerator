@@ -299,7 +299,7 @@ namespace ControllerGenerator.SourceGenerators
 
             stringBuilder.AppendLine($"        public {serviceName}Controller({serviceContract} service)");
             stringBuilder.AppendLine("        {");
-            stringBuilder.AppendLine("        _service = service;");
+            stringBuilder.AppendLine("            _service = service;");
             stringBuilder.AppendLine("        }");
             stringBuilder.AppendLine();
 
