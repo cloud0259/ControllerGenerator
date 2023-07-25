@@ -8,12 +8,12 @@
 	  <PackageTags>Source generator;.net;controller;api</PackageTags>
 	  <Company>$(Author)</Company>
 	  <Authors>Pilloy Stéphane</Authors>
-	  <Version>1.2.0</Version>
+	  <Version>1.3.0</Version>
 	  <Description>Abstraction for GenerateController</Description>
 	  <PackageProjectUrl>https://github.com/cloud0259/ControllerGenerator</PackageProjectUrl>
 	  <PackageReadmeFile>README.md</PackageReadmeFile>
 	  <RepositoryUrl>https://github.com/cloud0259/ControllerGenerator</RepositoryUrl>
-	  <PackageReleaseNotes>Initial</PackageReleaseNotes>
+	  <PackageReleaseNotes>Added NoGenerated attribute</PackageReleaseNotes>
 	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
 	  <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
