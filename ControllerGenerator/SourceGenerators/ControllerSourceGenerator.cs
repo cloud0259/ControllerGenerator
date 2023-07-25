@@ -40,6 +40,12 @@ namespace ControllerGenerator.SourceGenerators
                      // Generate controller source code for each type of service
                      foreach (var serviceType in serviceTypes)
                      {
+                         
+                         if (GetControllerExist(compilation, serviceType))
+                         {
+                             continue;
+                         }
+
                          var serviceMethods = GetServiceMethods(serviceType);
                          var sourceCode = GenerateControllerCode(serviceType, serviceMethods);
                          var sourceText = SourceText.From(sourceCode, Encoding.UTF8);
@@ -48,8 +54,39 @@ namespace ControllerGenerator.SourceGenerators
                      }
                  });
         }
+        /// <summary>
+        /// Check if a controller exists for this service
+        /// </summary>
+        /// <param name="compilation"></param>
+        /// <param name="serviceType"></param>
+        /// <returns></returns>
+        private bool GetControllerExist(Compilation compilation, INamedTypeSymbol serviceType)
+        {
+            var controllerExist = false;
+            foreach (var syntaxTree in compilation.SyntaxTrees)
+            {
+                var semanticModel = compilation.GetSemanticModel(syntaxTree);
+                var root = syntaxTree.GetRoot();
 
-        private IEnumerable<ISymbol> GetSymbolRecursively(INamespaceSymbol symbol, INamedTypeSymbol serviceInterfaceSymbol, HashSet<ISymbol> uniqueSymbols = null)
+                var types = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
+                foreach (var type in types)
+                {
+
+                    var typeSymbol = semanticModel.GetDeclaredSymbol(type);
+                    if (typeSymbol?.BaseType != null &&
+                        typeSymbol.BaseType.ToString().Contains("Microsoft.AspNetCore.Mvc.Controller"))
+                    {
+                        if (typeSymbol.Interfaces.Count() > 0 && typeSymbol.Interfaces.All(interfaceType => serviceType.Interfaces.Contains(interfaceType)))
+                        {
+                            controllerExist = true;
+                        }
+                    }
+                }
+            }
+           return controllerExist;
+        }
+
+        private IEnumerable<ISymbol> GetSymbols(INamespaceSymbol symbol, INamedTypeSymbol serviceInterfaceSymbol, HashSet<ISymbol> uniqueSymbols = null)
         {
             if (uniqueSymbols == null)
             {
@@ -95,7 +132,7 @@ namespace ControllerGenerator.SourceGenerators
 
                 if (namespaceSymbols != null)
                 {
-                    var services = GetSymbolRecursively(namespaceSymbols, serviceInterfaceSymbol);
+                    var services = GetSymbols(namespaceSymbols, serviceInterfaceSymbol);
                     foreach (var service in services)
                     {
                         if (services != null)
@@ -137,6 +174,12 @@ namespace ControllerGenerator.SourceGenerators
             return uniqueServices;
         }
 
+        /// <summary>
+        /// Get all interfaces from symbol
+        /// </summary>
+        /// <param name="symbol"></param>
+        /// <param name="serviceInterfaceSymbol"></param>
+        /// <returns></returns>
         private IEnumerable<INamedTypeSymbol> GetInterfacesFromSymbol(ISymbol symbol, INamedTypeSymbol serviceInterfaceSymbol)
         {
             var interfaces = Enumerable.Empty<INamedTypeSymbol>();
@@ -187,10 +230,8 @@ namespace ControllerGenerator.SourceGenerators
 
                 var attributeList = new List<AttributeSyntax>();
 
-                // Récupère les attributs du symbole de méthode
                 foreach (var attributeData in methodSymbol.GetAttributes())
                 {
-                    // Récupère le nom complet de l'attribut, y compris le nom de l'espace de noms
                     var attributeNamespace = attributeData.AttributeClass.ContainingNamespace.ToDisplayString();
                     var attributeName = attributeData.AttributeClass.Name;
                     if (attributeName.EndsWith("Attribute", StringComparison.OrdinalIgnoreCase))
@@ -245,7 +286,6 @@ namespace ControllerGenerator.SourceGenerators
                         attributeSyntax = attributeSyntax.WithArgumentList(SyntaxFactory.AttributeArgumentList(SyntaxFactory.SeparatedList(arguments)));
                     }
 
-                    // Ajoute l'attribut à la liste
                     attributeList.Add(attributeSyntax);
                 }
 
@@ -316,19 +356,21 @@ namespace ControllerGenerator.SourceGenerators
                         $"{p.Type.ToString()} {p.Identifier.ValueText}"
                     ));
                     var isHttpAttribute = false;
-                    var isMethodGenerate = true;
+                    var isMethodGenerate = method.AttributeLists
+                            .SelectMany(attributeList => attributeList.Attributes)
+                            .Any(attribute => attribute.Name.ToString().Contains("NoGenerated"));
+
+                    if (isMethodGenerate)
+                    {
+                        continue;
+                    }
+
                     foreach (var attributeList in method.AttributeLists)
                     {
                         foreach (var attribute in attributeList.Attributes)
                         {
                             string attributeName = attribute.Name.ToString();
-                            string attributeArguments = string.Join(", ", attribute.ArgumentList?.Arguments.Select(a => a.ToString()) ?? Enumerable.Empty<string>());
-
-                            if (attributeName.Contains("NoGenerated"))
-                            {
-                                isMethodGenerate = false;
-                                continue;
-                            }
+                            string attributeArguments = string.Join(", ", attribute.ArgumentList?.Arguments.Select(a => a.ToString()) ?? Enumerable.Empty<string>());                           
 
                             if (!attributeName.StartsWith("System"))
                             {
@@ -341,10 +383,7 @@ namespace ControllerGenerator.SourceGenerators
                         }
                     }
 
-                    if (!isMethodGenerate)
-                    {
-                        continue;
-                    }
+                    
 
                     if (!isHttpAttribute)
                     {
