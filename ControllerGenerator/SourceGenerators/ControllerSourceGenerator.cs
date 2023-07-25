@@ -316,12 +316,19 @@ namespace ControllerGenerator.SourceGenerators
                         $"{p.Type.ToString()} {p.Identifier.ValueText}"
                     ));
                     var isHttpAttribute = false;
+                    var isMethodGenerate = true;
                     foreach (var attributeList in method.AttributeLists)
                     {
                         foreach (var attribute in attributeList.Attributes)
                         {
                             string attributeName = attribute.Name.ToString();
                             string attributeArguments = string.Join(", ", attribute.ArgumentList?.Arguments.Select(a => a.ToString()) ?? Enumerable.Empty<string>());
+
+                            if (attributeName.Contains("NoGenerated"))
+                            {
+                                isMethodGenerate = false;
+                                continue;
+                            }
 
                             if (!attributeName.StartsWith("System"))
                             {
@@ -332,6 +339,11 @@ namespace ControllerGenerator.SourceGenerators
                                 }
                             }
                         }
+                    }
+
+                    if (!isMethodGenerate)
+                    {
+                        continue;
                     }
 
                     if (!isHttpAttribute)
