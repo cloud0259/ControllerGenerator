@@ -8,14 +8,13 @@
 		<Authors>Pilloy Stéphane</Authors>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<IncludeBuildOutput>false</IncludeBuildOutput>
-		<Version>1.3.0</Version>
+		<Version>1.3.2</Version>
 		<Description>Automatically generate controllers using a source generator.</Description>
 		<PackageProjectUrl>https://github.com/cloud0259/ControllerGenerator</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/cloud0259/ControllerGenerator</RepositoryUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-		<PackageReleaseNotes>Added NoGenereted attribute
-Ability to override an auto-generated controller</PackageReleaseNotes>
+		<PackageReleaseNotes>Fixed using another assembly name</PackageReleaseNotes>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
