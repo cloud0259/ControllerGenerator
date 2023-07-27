@@ -116,32 +116,39 @@ namespace ControllerGenerator.SourceGenerators
         /// <returns></returns>
         private List<INamedTypeSymbol> GetServiceTypes(Compilation compilation)
         {
+            List<INamedTypeSymbol> servicesTypes = new List<INamedTypeSymbol>();
             var serviceInterfaceSymbol = compilation.GetTypeByMetadataName("ControllerGenerator.Abstraction.Contracts.IAutoGenerateController");
 
-            string assemblyName = compilation.AssemblyName;
-            int lastDotIndex = assemblyName.IndexOf('.');
-            string projectName = assemblyName.Contains(".") ? assemblyName.Substring(0, lastDotIndex) : assemblyName;
+            //string assemblyName = compilation.AssemblyName;
+            var assemblyNames = compilation.ReferencedAssemblyNames
+                .Where(x => !x.Name.ToLower().StartsWith("microsoft") && !x.Name.ToLower().StartsWith("system")).Select(x => x.Name).ToList();
 
-            IEnumerable<IAssemblySymbol> assemblySymbols = compilation.SourceModule.ReferencedAssemblySymbols.Where(q => q.Name.Contains(projectName));
-
-            List<INamedTypeSymbol> servicesTypes = new List<INamedTypeSymbol>();
-            foreach (var assemblySymbol in assemblySymbols)
+            foreach (var assemblyName in assemblyNames)
             {
-                var namespaceSymbols = assemblySymbol.GlobalNamespace.GetNamespaceMembers()
-              .First(m => m.Name == projectName);
 
-                if (namespaceSymbols != null)
+                int lastDotIndex = assemblyName.IndexOf('.');
+                string projectName = lastDotIndex >= 0 ? assemblyName.Substring(0, lastDotIndex) : assemblyName;
+
+                IEnumerable<IAssemblySymbol> assemblySymbols = compilation.SourceModule.ReferencedAssemblySymbols.Where(q => q.Name.Contains(projectName));
+
+                foreach (var assemblySymbol in assemblySymbols)
                 {
-                    var services = GetSymbols(namespaceSymbols, serviceInterfaceSymbol);
-                    foreach (var service in services)
-                    {
-                        if (services != null)
-                        {
-                            var serviceInterfaces = GetInterfacesFromSymbol(service, serviceInterfaceSymbol);
+                    var namespaceSymbols = assemblySymbol.GlobalNamespace.GetNamespaceMembers()
+                  .FirstOrDefault(m => m.Name == projectName);
 
-                            if (serviceInterfaces != null)
+                    if (namespaceSymbols != null)
+                    {
+                        var services = GetSymbols(namespaceSymbols, serviceInterfaceSymbol);
+                        foreach (var service in services)
+                        {
+                            if (services != null)
                             {
-                                servicesTypes.AddRange(serviceInterfaces.ToList());
+                                var serviceInterfaces = GetInterfacesFromSymbol(service, serviceInterfaceSymbol);
+
+                                if (serviceInterfaces != null)
+                                {
+                                    servicesTypes.AddRange(serviceInterfaces.ToList());
+                                }
                             }
                         }
                     }
